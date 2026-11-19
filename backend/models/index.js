@@ -59,20 +59,24 @@ Attendance.belongsTo(Faculty, { as: 'faculty', foreignKey: 'facultyId', onDelete
 Attendance.belongsTo(Student, { as: 'student', foreignKey: 'studentId', onDelete: 'CASCADE' });
 Student.hasMany(Attendance, { as: 'attendances', foreignKey: 'studentId' });
 Subject.hasMany(Attendance, { as: 'attendances', foreignKey: 'subjectId' });
+Faculty.hasMany(Attendance, { as: 'conductedAttendances', foreignKey: 'facultyId' });
 
 // Timetable Associations
 Timetable.belongsTo(Department, { as: 'department', foreignKey: 'departmentId', onDelete: 'CASCADE' });
 Timetable.belongsTo(Subject, { as: 'subject', foreignKey: 'subjectId', onDelete: 'CASCADE' });
 Timetable.belongsTo(Faculty, { as: 'faculty', foreignKey: 'facultyId', onDelete: 'CASCADE' });
+Faculty.hasMany(Timetable, { as: 'timetables', foreignKey: 'facultyId' });
 
 // Assignment & Submission Associations
 Assignment.belongsTo(Subject, { as: 'subject', foreignKey: 'subjectId', onDelete: 'CASCADE' });
 Assignment.belongsTo(Faculty, { as: 'faculty', foreignKey: 'facultyId', onDelete: 'CASCADE' });
 Assignment.belongsTo(Department, { as: 'department', foreignKey: 'departmentId', onDelete: 'CASCADE' });
+Faculty.hasMany(Assignment, { as: 'assignments', foreignKey: 'facultyId' });
 Assignment.hasMany(Submission, { as: 'submissions', foreignKey: 'assignmentId', onDelete: 'CASCADE' });
 Submission.belongsTo(Assignment, { as: 'assignment', foreignKey: 'assignmentId', onDelete: 'CASCADE' });
 Submission.belongsTo(Student, { as: 'student', foreignKey: 'studentId', onDelete: 'CASCADE' });
 Submission.belongsTo(Faculty, { as: 'evaluator', foreignKey: 'evaluatedBy', onDelete: 'SET NULL' });
+Student.hasMany(Submission, { as: 'submissions', foreignKey: 'studentId' });
 
 // Examination & Mark Associations
 Examination.belongsTo(Department, { as: 'department', foreignKey: 'departmentId', onDelete: 'CASCADE' });
@@ -82,12 +86,14 @@ Mark.belongsTo(Examination, { as: 'examination', foreignKey: 'examinationId', on
 Mark.belongsTo(Student, { as: 'student', foreignKey: 'studentId', onDelete: 'CASCADE' });
 Mark.belongsTo(Subject, { as: 'subject', foreignKey: 'subjectId', onDelete: 'CASCADE' });
 Mark.belongsTo(Faculty, { as: 'evaluator', foreignKey: 'evaluatedBy', onDelete: 'CASCADE' });
+Student.hasMany(Mark, { as: 'marks', foreignKey: 'studentId' });
 
 // Placement & Application Associations
 Placement.belongsTo(User, { as: 'postedBy', foreignKey: 'postedById', onDelete: 'CASCADE' });
 Placement.hasMany(Application, { as: 'applications', foreignKey: 'placementId', onDelete: 'CASCADE' });
 Application.belongsTo(Placement, { as: 'placement', foreignKey: 'placementId', onDelete: 'CASCADE' });
 Application.belongsTo(Student, { as: 'student', foreignKey: 'studentId', onDelete: 'CASCADE' });
+Student.hasMany(Application, { as: 'applications', foreignKey: 'studentId' });
 Placement.belongsToMany(Department, { through: 'placement_departments', as: 'eligibleDepartments', foreignKey: 'placementId' });
 Department.belongsToMany(Placement, { through: 'placement_departments', as: 'eligiblePlacements', foreignKey: 'departmentId' });
 

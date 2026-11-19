@@ -89,7 +89,8 @@ export const getDepartmentById = async (req, res, next) => {
 // @access  Private (Admin)
 export const createDepartment = async (req, res, next) => {
   try {
-    const { name, code, description, hod, establishedYear, intakeCapacity, contactEmail } = req.body;
+    const { name, code, description, hod, hodId, establishedYear, intakeCapacity, contactEmail, programs, ugCourse, pgCourse } = req.body;
+    const selectedHod = hod || hodId;
 
     if (!name || !code || !description || !establishedYear || !intakeCapacity || !contactEmail) {
       return res.status(400).json({
@@ -145,14 +146,14 @@ export const createDepartment = async (req, res, next) => {
       contactEmail: contactEmail.trim().toLowerCase(),
     };
 
-    if (hod) {
-      deptData.hodId = hod;
+    if (selectedHod) {
+      deptData.hodId = selectedHod;
     }
 
     const department = await Department.create(deptData);
 
-    if (hod) {
-      await User.update({ role: 'hod', departmentId: department.id }, { where: { id: hod } });
+    if (selectedHod) {
+      await User.update({ role: 'hod', departmentId: department.id }, { where: { id: selectedHod } });
     }
 
     res.status(201).json({
@@ -170,7 +171,8 @@ export const createDepartment = async (req, res, next) => {
 // @access  Private (Admin)
 export const updateDepartment = async (req, res, next) => {
   try {
-    const { name, code, description, hod, establishedYear, intakeCapacity, contactEmail } = req.body;
+    const { name, code, description, hod, hodId, establishedYear, intakeCapacity, contactEmail } = req.body;
+    const selectedHod = hod !== undefined ? hod : hodId;
     const department = await Department.findByPk(req.params.id);
 
     if (!department) {
@@ -215,10 +217,10 @@ export const updateDepartment = async (req, res, next) => {
     if (code) department.code = code.trim().toUpperCase();
     if (description !== undefined) department.description = description.trim();
 
-    if (hod !== undefined) {
-      if (hod) {
-        department.hodId = hod;
-        await User.update({ role: 'hod', departmentId: department.id }, { where: { id: hod } });
+    if (selectedHod !== undefined) {
+      if (selectedHod) {
+        department.hodId = selectedHod;
+        await User.update({ role: 'hod', departmentId: department.id }, { where: { id: selectedHod } });
       } else {
         department.hodId = null;
       }

@@ -381,3 +381,13 @@ export const changePassword = async (req, res, next) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Logout user session
+// @route   POST /api/auth/logout
+// @access  Public / Private
+export const logout = async (req, res, next) => {
+  res.json({
+    success: true,
+    message: 'User logged out successfully',
+  });
+};

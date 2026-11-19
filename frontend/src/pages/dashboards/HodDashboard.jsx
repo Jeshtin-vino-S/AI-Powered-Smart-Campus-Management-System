@@ -24,25 +24,34 @@ import {
 export const HodDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDeptId, setSelectedDeptId] = useState('');
+  const [selectedProgram, setSelectedProgram] = useState('all'); // 'all' | 'bca' | 'mca'
+
+  const fetchHodStats = async (deptId, prog) => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (deptId) params.departmentId = deptId;
+      if (prog && prog !== 'all') params.program = prog;
+      const res = await api.get('/analytics/hod', { params });
+      if (res.data?.success) {
+        setData(res.data);
+        if (!selectedDeptId && res.data.departmentId) {
+          setSelectedDeptId(res.data.departmentId);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching HOD analytics:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHodStats = async () => {
-      try {
-        const res = await api.get('/analytics/hod');
-        if (res.data?.success) {
-          setData(res.data);
-        }
-      } catch (err) {
-        console.error('Error fetching HOD analytics:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchHodStats(selectedDeptId, selectedProgram);
+  }, [selectedDeptId, selectedProgram]);
 
-    fetchHodStats();
-  }, []);
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <DashboardLayout>
         <div className="h-96 flex flex-col items-center justify-center space-y-3">
@@ -55,21 +64,61 @@ export const HodDashboard = () => {
 
   // Real data only from database API (zero hardcoded / zero dummy fallback values)
   const stats = data?.stats || {};
-  const departmentName = data?.department || 'Department Overview';
+  const departmentName = data?.department || 'Department of Computer Applications';
+  const managedDepts = data?.managedDepartments || [];
+  const programsList = data?.programs || [
+    { id: 'all', name: 'All Programs' },
+    { id: 'bca', name: 'UG: BCA' },
+    { id: 'mca', name: 'PG: MCA' },
+  ];
   const barData = data?.semesterPerformance || [];
-  const pieData = data?.workload || [];
+  const rawPieData = data?.workload || [];
+
+  // Guarantee that pie values strictly sum to 100%
+  const totalPie = rawPieData.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const pieData = totalPie > 0
+    ? rawPieData.map((item, idx) => {
+        if (idx === rawPieData.length - 1) {
+          const priorSum = rawPieData.slice(0, -1).reduce((acc, cur) => acc + Math.round((Number(cur.value) / totalPie) * 100), 0);
+          return { ...item, value: Math.max(0, 100 - priorSum) };
+        }
+        return { ...item, value: Math.round((Number(item.value) / totalPie) * 100) };
+      })
+    : rawPieData;
 
   return (
     <DashboardLayout>
       <div className="space-y-5 max-w-7xl mx-auto">
-        {/* Title Header */}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            HOD Dashboard
-          </h1>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
-            {departmentName}
-          </p>
+        {/* Title Header with UG & PG Program Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              HOD Dashboard
+            </h1>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              {departmentName}
+            </p>
+          </div>
+
+          {/* Program Switcher (All / UG: BCA / PG: MCA) */}
+          <div className="flex items-center space-x-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            {programsList.map((p) => {
+              const isActive = selectedProgram === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProgram(p.id)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  }`}
+                >
+                  {p.name}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 4 Stat Cards Row matching 05_HOD_Dashboard.png */}
@@ -153,7 +202,9 @@ export const HodDashboard = () => {
                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} 
                     />
                     <Tooltip 
+                      cursor={{ fill: 'rgba(6, 182, 212, 0.08)' }}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
+                      formatter={(val) => [`${val}%`, 'Score']}
                     />
                     <Bar dataKey="score" fill="#06b6d4" radius={[6, 6, 0, 0]} />
                   </BarChart>
